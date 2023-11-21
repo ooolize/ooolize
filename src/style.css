@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    --generics-color: theme("colors.gray.500");
+    --generics-backgroundColor: theme("colors.black");
+  }
+  .theme-light {
+    --generics-color: theme("colors.gray.500");
+    --generics-backgroundColor: theme("colors.black");
+  }
+  .theme-dark {
+    --generics-color: theme("colors.gray.500");
+    --generics-backgroundColor: theme("colors.black");
+  }
+  body {
+    color: var(--generics-color);
+    background-color: var(--generics-backgroundColor);
+  }
+}
