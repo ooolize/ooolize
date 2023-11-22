@@ -25,14 +25,27 @@ const draw = () => {
   const x3 = canvas.value.width;
   const y3 = 0;
 
+  const gradient = ctx.createRadialGradient(
+    canvas.value.width / 2,
+    canvas.value.height / 2,
+    canvas.value.height / 40,
+    canvas.value.width / 2,
+    canvas.value.height / 2,
+    canvas.value.height / 2
+  );
+
   // 绘制三角形
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
   ctx.lineTo(x3, y3);
   ctx.closePath();
+
+  // 增加红色透明度的线性渐变
+  gradient.addColorStop(0, "rgba(255,0,0,1)");
+  gradient.addColorStop(1, "rgba(255,0,0,0.1)");
   // 填充颜色
-  ctx.fillStyle = "red";
+  ctx.fillStyle = gradient;
   ctx.fill();
 };
 onMounted(() => {
