@@ -5,60 +5,80 @@
  * @LastEditors: lize
 -->
 <template>
-  <canvas ref="canvas" class="w-full h-screen"></canvas>
+    <canvas ref="canvas" class="w-full h-screen z-0 fixed"></canvas>
+    <!-- <div id="mainTitle" class="font-Mnxy text-8xl leading-10 font-semibold"></div> -->
+    <div class="my-32 mx-32  text-generics">
+        <div id="mainTitle" class="font-Mnxy text-9xl leading-10 font-semibold"></div>
+        <div class="my-48 text-7xl ">{{ i18n.global.t("message.title") }}</div>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-
+import i18n from "@/lang";
+import TypeIt from "typeit";
 const canvas = ref<HTMLCanvasElement>();
+// const mainTitle = ref<HTMLDivElement>();
+
+// typeit的类型  TODO 为什么必须是any?
+// type type1 = new TypeIt("", {});
+
 
 const draw = () => {
-  if (!canvas.value) return;
-  const ctx = canvas.value.getContext("2d")!;
-  const x1 = canvas.value.width / 3;
-  const y1 = canvas.value.height;
+    if (!canvas.value) return;
+    const ctx = canvas.value.getContext("2d")!;
+    const x1 = canvas.value.width / 3;
+    const y1 = canvas.value.height;
 
-  const x2 = (canvas.value.width * 2) / 3;
-  const y2 = canvas.value.height;
+    const x2 = (canvas.value.width * 2) / 3;
+    const y2 = canvas.value.height;
 
-  const x3 = canvas.value.width;
-  const y3 = 0;
+    const x3 = canvas.value.width;
+    const y3 = 0;
 
-  const gradient = ctx.createRadialGradient(
-    canvas.value.width / 2,
-    canvas.value.height / 2,
-    canvas.value.height / 40,
-    canvas.value.width / 2,
-    canvas.value.height / 2,
-    canvas.value.height / 2
-  );
+    const radioX = canvas.value.width * 7 / 12
+    const radioY = canvas.value.height / 3
+    // 创建渐变
+    const gradient = ctx.createRadialGradient(
+        radioX,
+        radioY,
+        canvas.value.height / 40,
+        radioX,
+        radioY,
+        canvas.value.height / 2
+    );
 
-  // 绘制三角形
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.lineTo(x3, y3);
-  ctx.closePath();
+    // 绘制三角形
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.closePath();
 
-  // 增加红色透明度的线性渐变
-  gradient.addColorStop(0, "rgba(255,0,0,1)");
-  gradient.addColorStop(1, "rgba(255,0,0,0.1)");
-  // 填充颜色
-  ctx.fillStyle = gradient;
-  ctx.fill();
+    // 增加红色透明度的线性渐变
+    gradient.addColorStop(0, "rgba(255,70,70,1)");
+    gradient.addColorStop(0.5, "rgba(255,70,70,0.4)");
+    gradient.addColorStop(1, "rgba(255,70,70,0.1)");
+
+    // 填充颜色
+    ctx.fillStyle = gradient;
+    ctx.fill();
 };
 onMounted(() => {
-  // 获取屏幕宽度和高度
-  const screenWidth = window.innerWidth;
-  const screenHeight = window.innerHeight;
+    // 获取屏幕宽度和高度
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
 
-  // 设置 Canvas 的宽度和高度与屏幕相同
-  canvas.value!.width = screenWidth;
-  canvas.value!.height = screenHeight;
-  draw();
+    // 设置 Canvas 的宽度和高度与屏幕相同
+    canvas.value!.width = screenWidth;
+    canvas.value!.height = screenHeight;
+    draw();
+
+    new (TypeIt as any)("#mainTitle", {
+        strings: i18n.global.t("message.mainTitle"),
+        speed: 75,
+    }).go();
 });
-// draw();
 </script>
 
 <style></style>
