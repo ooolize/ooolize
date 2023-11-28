@@ -5,11 +5,11 @@
  * @LastEditors: lize
 -->
 <template>
-  <div class="flex justify-evenly items-center w-1/2 h-16 inset-y-12 sticky">
-    <div class="">博客</div>
-    <div class="">笔记</div>
-    <div class="">demo</div>
-    <div class="">项目</div>
+  <div class="left-20 flex justify-evenly items-center w-1/2 h-16 my-6 sticky">
+    <div class="">{{ $t("navigator.blog") }}</div>
+    <div class="">{{ $t("navigator.note") }}</div>
+    <div class="">{{ $t("navigator.demo") }}</div>
+    <div class="">{{ $t("navigator.project") }}</div>
   </div>
 </template>
 
