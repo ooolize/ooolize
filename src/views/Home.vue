@@ -8,28 +8,18 @@
 <template>
   <canvas ref="canvas" class="w-full h-screen z-0 fixed"></canvas>
 
-  <!-- <div class="my-32 mx-32 text-generics">
+  <div class="my-32 mx-32 text-generics">
     <div
       id="mainTitle"
-      class="font-Mnxy text-9xl leading-10 font-semibold"
+      class="font-Mnxy text-6xl leading-10 font-semibold"
     ></div>
     <div class="mt-32 text-5xl">{{ $t("personIntro") }}</div>
     <div class="my-16 text-5xl">{{ $t("projectIntro") }}</div>
-  </div> -->
-  <div class="flex justify-end items-center right-10 bottom-10 fixed w-2/12">
-    <img class="mx-1" src="@/assets/svg/lang.svg" alt="light mode" />
-    <img
-      class="mx-1"
-      src="@/assets/svg/light.svg"
-      alt="light mode"
-      @click="changeStatus"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { changeStatus } from "@/hooks/useDark";
 import i18n from "@/locales";
 
 // @ts-ignore
@@ -105,4 +95,3 @@ onMounted(() => {
 </script>
 
 <style></style>
-@/locales
