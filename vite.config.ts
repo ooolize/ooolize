@@ -1,18 +1,24 @@
 /*
- * @Description: 
+ * @Description:
  * @Author: lize
  * @Date: 2023-11-09
  * @LastEditors: lize
  */
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { basename, dirname, resolve } from 'node:path'
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import { basename, dirname, resolve } from "node:path";
+import Pages from "vite-plugin-pages";
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    Pages({
+      dirs: "src/views",
+      extensions: ["vue"],
+    }),
+    vue(),
+  ],
   resolve: {
-    alias: [
-      { find: '@/', replacement: `${resolve(__dirname, 'src')}/` },
-    ],
+    alias: [{ find: "@/", replacement: `${resolve(__dirname, "src")}/` }],
   },
-})
+});
