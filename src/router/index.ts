@@ -6,7 +6,7 @@
  */
 import { createRouter, createWebHistory } from "vue-router";
 
-import routes from "~views";
+import routes from "~pages";
 // const routes = [
 //   { path: "/", redirect: "/home" },
 //   { path: "/home", component: () => import("@/views/Home.vue") },

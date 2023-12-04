@@ -14,10 +14,14 @@ export default defineConfig({
   plugins: [
     Pages({
       dirs: "src/views",
-      extensions: ["vue"],
+      // extensions: ["vue"],
     }),
     vue(),
   ],
+  server: {
+    host: "127.0.0.1",
+    port: 7272,
+  },
   resolve: {
     alias: [{ find: "@/", replacement: `${resolve(__dirname, "src")}/` }],
   },
