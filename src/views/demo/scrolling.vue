@@ -1,63 +1,132 @@
 <!--
  * @Description: 
  * @Author: lize
- * @Date: 2023-12-04
+ * @Date: 2023-12-06
  * @LastEditors: lize
 -->
 <template>
-  <div class="flex justify-center items-center">
-    <div class="relative h-64 w-1/3 bg-red-400 over overflow-y-scroll">
-      <div class="">
-        <div class="w-40 h-64"></div>
-        <div class="w-40 h-64"></div>
-        <div class="w-40 h-64"></div>
-      </div>
-      <div class="flex justify-between">
-        <div class="bar1 w-4 h-32 bg-yellow-200"></div>
-
-        <div class="bar1 w-4 h-32 bg-yellow-200"></div>
-      </div>
-      <div class="">
-        <div class="w-40 h-64"></div>
-        <div class="w-40 h-64"></div>
-        <div class="w-40 h-64"></div>
-      </div>
+  <div class="fixed top-1/2 left-1/2">
+    <div class="hidden flex justify-center items-center">
+      <div class="target">H</div>
+      <div class="target">E</div>
+      <div class="target">L</div>
+      <div class="target">L</div>
+      <div class="target">O</div>
+      <div class="target">W</div>
+      <div class="target">O</div>
+      <div class="target">R</div>
+      <div class="target">L</div>
+      <div class="target">D</div>
     </div>
   </div>
-  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-    {{ inside }}
+  <div class="w-1/3 absolute left-1/3">
+    <div class="h-screen"></div>
+    <div class="h-screen">
+      <!-- <div class="flex justify-center items-center"> -->
+      <div class="relative random">H</div>
+      <div class="relative random">E</div>
+      <div class="relative random">L</div>
+      <div class="relative random">L</div>
+      <div class="relative random">O</div>
+      <div class="relative random">W</div>
+      <div class="relative random">O</div>
+      <div class="relative random">R</div>
+      <div class="relative random">L</div>
+      <div class="relative random">D</div>
+    </div>
+    <!-- </div> -->
+    <div class="h-screen"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-const inside = ref("outside");
+import { onMounted, onUnmounted, ref, Ref, reactive } from "vue";
 
-// 使用IntersectionObserver
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Distance {
+  xDis: number;
+  yDis: number;
+}
+
+let baseHeight: number = 0;
+let scrollMax: number = 300;
+const randomPoint: Record<string, Point> = {};
+const targetPoint: Record<string, Point> = {};
+const initDisPoint: Record<string, Distance> = {};
+const scrollHeight: Ref<number> = ref(0);
+const scrollDis: Record<string, Distance> = reactive({});
+// 全部random元素是否已经出现
+let isAllRandomShow = false;
+
+// 计算距离
+for (const [text, value] of Object.entries(targetPoint)) {
+  initDisPoint[text] = {
+    xDis: randomPoint[text].x - value.x,
+    yDis: randomPoint[text].y - value.y,
+  };
+}
+
 const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting) {
-      inside.value = "inside";
-      // 元素进入视口 添加动画样式
-      entry.target.classList.add("animate-bounce");
-    } else {
-      inside.value = "outside";
+  isAllRandomShow = entries.some((entry) => {
+    // 如果都出现了 置位isAllRandomShow
+    if (!entry.isIntersecting) {
+      return false;
     }
+    return true;
   });
 });
+
+// 监听滚动事件
+window.addEventListener("scroll", () => {
+  if (isAllRandomShow) {
+    scrollHeight.value = window.scrollY;
+    return;
+  }
+  baseHeight = window.scrollY;
+});
+
 onMounted(() => {
-  console.log("onMounted");
-  // 获取bar1元素
-  const barList = document.querySelectorAll("div.bar1");
-  barList.forEach((bar) => {
-    observer.observe(bar);
+  // 处理target元素
+  const targetElementList: NodeListOf<HTMLElement> =
+    document.querySelectorAll(".target");
+
+  targetElementList.forEach((element) => {
+    let elementPos = element.getBoundingClientRect();
+    let text = element.innerText;
+    targetPoint[text] = {
+      x: elementPos.x,
+      y: elementPos.y,
+    };
+  });
+  // 处理random元素
+  const elementList: NodeListOf<HTMLElement> =
+    document.querySelectorAll(".random");
+  elementList.forEach((element) => {
+    // 将className为random-x的元素,给予随机的位置
+    element.style.top = `${Math.random() * 50}vh`;
+    element.style.left = `${Math.random() * 30}vw`;
+    console.log(element.getBoundingClientRect());
+
+    let elementPos = element.getBoundingClientRect();
+    let text = element.innerText;
+    randomPoint[text] = {
+      x: elementPos.x,
+      y: elementPos.y,
+    };
+
+    // 监视所有的random元素是否已经出现
+    observer.observe(element);
   });
 });
+onUnmounted(() => {
+  observer.disconnect();
+});
+
+//
 </script>
 
-<style>
-.animate-bounce {
-  /* background-color: blue; */
-  animation: bounce 1s;
-}
-</style>
+<style></style>
