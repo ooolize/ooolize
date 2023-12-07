@@ -6,7 +6,7 @@
 -->
 <template>
   <div class="fixed top-1/2 left-1/2">
-    <div class="hidden flex justify-center items-center">
+    <div class="flex justify-center items-center">
       <div class="target">H</div>
       <div class="target">E</div>
       <div class="target">L</div>
@@ -22,25 +22,31 @@
   <div class="w-1/3 absolute left-1/3">
     <div class="h-screen"></div>
     <div class="h-screen">
-      <!-- <div class="flex justify-center items-center"> -->
-      <div class="relative random">H</div>
-      <div class="relative random">E</div>
-      <div class="relative random">L</div>
-      <div class="relative random">L</div>
-      <div class="relative random">O</div>
-      <div class="relative random">W</div>
-      <div class="relative random">O</div>
-      <div class="relative random">R</div>
-      <div class="relative random">L</div>
-      <div class="relative random">D</div>
+      <div
+        class="relative random"
+        :style="{
+          transform: `translate(${scrollDis[char].xDis}px, ${scrollDis[char].yDis}px)`,
+        }"
+        v-for="char in text"
+      >
+        {{ char }}
+      </div>
     </div>
-    <!-- </div> -->
     <div class="h-screen"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, Ref, reactive } from "vue";
+import {
+  onMounted,
+  onUnmounted,
+  ref,
+  Ref,
+  reactive,
+  computed,
+  toRef,
+} from "vue";
+import { isInScreen } from "@/logic/utils";
 
 interface Point {
   x: number;
@@ -51,42 +57,80 @@ interface Distance {
   xDis: number;
   yDis: number;
 }
+// 调整 xDis 和 yDis 的类型为 Ref<number>
+type RefDistance = {
+  [K in keyof Distance]: K extends "xDis" ? Ref<number> : Ref<Distance[K]>;
+};
 
-let baseHeight: number = 0;
-let scrollMax: number = 300;
-const randomPoint: Record<string, Point> = {};
-const targetPoint: Record<string, Point> = {};
-const initDisPoint: Record<string, Distance> = {};
+let startHeight: number = 0;
+let scrollMax: number = 50;
+const randomPoint: Record<string, Point> = {}; // 随机点
+const targetPoint: Record<string, Point> = {}; // 目标点
+const initDisPoint: Record<string, Distance> = {}; // 初始距离
 const scrollHeight: Ref<number> = ref(0);
-const scrollDis: Record<string, Distance> = reactive({});
-// 全部random元素是否已经出现
-let isAllRandomShow = false;
-
-// 计算距离
-for (const [text, value] of Object.entries(targetPoint)) {
-  initDisPoint[text] = {
-    xDis: randomPoint[text].x - value.x,
-    yDis: randomPoint[text].y - value.y,
-  };
-}
-
-const observer = new IntersectionObserver((entries) => {
-  isAllRandomShow = entries.some((entry) => {
-    // 如果都出现了 置位isAllRandomShow
-    if (!entry.isIntersecting) {
-      return false;
-    }
-    return true;
-  });
+const rate: Ref<number> = computed(() => {
+  return scrollHeight.value / toRef(scrollMax).value;
 });
+const text = "HELLOWORLD";
 
+const scrollDis: Record<string, RefDistance> = reactive(
+  text.split("").reduce((pre, cur) => {
+    pre[cur] = {
+      xDis: computed(() => {
+        return (
+          rate.value *
+          (initDisPoint[cur] == undefined ? 0 : initDisPoint[cur].xDis)
+        );
+      }),
+      yDis: computed(() => {
+        return (
+          rate.value *
+          (initDisPoint[cur] == undefined ? 0 : initDisPoint[cur].yDis)
+        );
+      }),
+    };
+    return pre;
+  }, {} as Record<string, RefDistance>)
+);
+
+// 判断所有random元素是否已经出现
+let isAllRandomShow = () => {
+  const elementList: NodeListOf<HTMLElement> =
+    document.querySelectorAll(".random");
+  let label = true;
+  elementList.forEach((element) => {
+    label = isInScreen(element);
+  });
+  return label;
+};
+
+// const observer = new IntersectionObserver((entries) => {
+//   if (entries.length !== text.length) return;
+//   isAllRandomShow = entries.every((entry) => {
+//     // 如果都出现了 置位isAllRandomShow
+//     return entry.isIntersecting;
+//     // return true;
+//   });
+// });
+
+let firstCross = true;
 // 监听滚动事件
 window.addEventListener("scroll", () => {
-  if (isAllRandomShow) {
-    scrollHeight.value = window.scrollY;
+  if (isAllRandomShow()) {
+    // 在约定范围内 滚动响应
+    if (window.scrollY - startHeight < scrollMax) {
+      scrollHeight.value = window.scrollY - startHeight;
+      console.log(rate.value);
+    } else if (firstCross) {
+      scrollHeight.value = scrollMax;
+      firstCross = false;
+    }
+    // console.log(scrollHeight.value);
+    // console.log(scrollDis);
     return;
+  } else {
+    startHeight = window.scrollY;
   }
-  baseHeight = window.scrollY;
 });
 
 onMounted(() => {
@@ -119,11 +163,22 @@ onMounted(() => {
     };
 
     // 监视所有的random元素是否已经出现
-    observer.observe(element);
+    // observer.observe(element);
   });
+  // 计算距离
+  for (const [text, value] of Object.entries(targetPoint)) {
+    initDisPoint[text] = {
+      xDis: value.x - randomPoint[text].x,
+      yDis: value.y - randomPoint[text].y,
+    };
+    // scrollDis[text] = reactive({
+    //   xDis: rate.value * toRef(initDisPoint[text].xDis).value,
+    //   yDis: rate.value * toRef(initDisPoint[text].yDis).value,
+    // });
+  }
 });
 onUnmounted(() => {
-  observer.disconnect();
+  // observer.disconnect();
 });
 
 //
