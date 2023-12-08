@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { noteBp } from "@/views/blue-print.js";
+import { noteBp } from "@/views/blue-print";
 console.log(noteBp);
 </script>
 

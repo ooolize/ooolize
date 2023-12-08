@@ -1,3 +1,9 @@
+<!--
+ * @Description: 
+ * @Author: lize
+ * @Date: 2023-12-08
+ * @LastEditors: lize
+-->
 <template>
   <div class="flex justify-center items-center flex-col">
     <!-- <div>11</div> -->
@@ -8,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { blogBp } from "@/views/blue-print.js";
+import { blogBp } from "@/views/blue-print";
 import NoteCard from "@/components/NoteCard.vue";
 console.log(blogBp);
 </script>

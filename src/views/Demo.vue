@@ -1,5 +1,11 @@
+<!--
+ * @Description: 
+ * @Author: lize
+ * @Date: 2023-12-08
+ * @LastEditors: lize
+-->
 <template>
-  <div class="flex justify-center items-center flex-col ">
+  <div class="flex justify-center items-center flex-col">
     <!-- <div>11</div> -->
     <div class="my-4" v-for="bpItem in demoBp">
       <NoteCard :itemMsg="bpItem"></NoteCard>
@@ -8,9 +14,8 @@
 </template>
 
 <script setup lang="ts">
-import { demoBp } from "@/views/blue-print.js";
+import { demoBp } from "@/views/blue-print";
 import NoteCard from "@/components/NoteCard.vue";
-console.log(demoBp);
 </script>
 
 <style></style>
