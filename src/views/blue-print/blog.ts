@@ -12,7 +12,15 @@ export const blogBp: bpItem[] = [
     description: "thank you, alen",
     link: "/blog/走出森林-也谈存在主义危机.md",
     date: "2021-08-20",
-    tags: ["人生感悟"],
+    tags: ["生活感悟"],
+    lang: "cn",
+  },
+  {
+    name: "vue工程实践",
+    description: "",
+    link: "/blog/vue工程实践.md",
+    date: "2021-08-20",
+    tags: ["技术分享"],
     lang: "cn",
   },
 ];

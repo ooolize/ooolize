@@ -31,4 +31,12 @@ export const demoBp: bpItem[] = [
     tags: ["css", "webApi"],
     lang: "cn",
   },
+  {
+    name: "typer",
+    description: "css transition test",
+    link: "@/assets/video/typer.mp4",
+    date: "2022-12-11",
+    tags: ["css", "webApi"],
+    lang: "cn",
+  },
 ];

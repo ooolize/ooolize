@@ -28,4 +28,11 @@ export const noteBp: bpItem[] = [
     tags: ["读书笔记"],
     lang: "cn",
   },
+  {
+    name: "Makefile",
+    link: "/note/Makefile.md",
+    date: "2021-08-20",
+    tags: ["工具学习"],
+    lang: "cn",
+  },
 ];
