@@ -39,4 +39,12 @@ export const demoBp: bpItem[] = [
     tags: ["css", "webApi"],
     lang: "cn",
   },
+  {
+    name: "hotkeys",
+    description: "listen to keyboard events",
+    link: "@/assets/video/hotkeys.mp4",
+    date: "2022-12-11",
+    tags: [""],
+    lang: "cn",
+  },
 ];

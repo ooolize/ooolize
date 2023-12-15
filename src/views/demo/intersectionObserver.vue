@@ -40,14 +40,14 @@ const observer = new IntersectionObserver((entries) => {
     if (entry.isIntersecting) {
       inside.value = "inside";
       // 元素进入视口 添加动画样式
-      entry.target.classList.add(
-        "transition-all",
-        "duration-1000",
-        "ease-in-out",
-        "transform",
-        "-translate-y-32",
-        "translate-x-64"
-      );
+      // entry.target.classList.add(
+      //   "transition-all",
+      //   "duration-1000",
+      //   "ease-in-out",
+      //   "transform",
+      //   "-translate-y-32",
+      //   "translate-x-64"
+      // );
     } else {
       inside.value = "outside";
       // entry.target.classList.remove(

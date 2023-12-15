@@ -294,7 +294,7 @@ void write(ostream & output,int value) {
 }
 
 void read_and_print(){
-    auto& x =read(cin);
+    auto& x = read(cin);
     write(cout,x);
 }
 ```
@@ -334,6 +334,32 @@ Matrx<M,P> operator*(Matrx<M,N> const& lhs, Matrx<N,P> const&rhs) {
  Matrix<2, 3> m23 = /* ... */;
  auto m13 = m12 * m23; // OK
  auto mX = m23 * m13;  // Compile Error!
+
+
+
+// 计算组合数
+template <int N, int K>
+struct BinomialCoefficient {
+    static const int value = BinomialCoefficient<N - 1, K - 1>::value + BinomialCoefficient<N - 1, K>::value;
+};
+
+template <int N>
+struct BinomialCoefficient<N, 0> {
+    static const int value = 1;
+};
+
+template <int N>
+struct BinomialCoefficient<N, N> {
+    static const int value = 1;
+};
+
+int main() {
+    const int result = BinomialCoefficient<5, 2>::value;  // 在编译期计算组合数 C(5, 2)
+    return 0;
+}
+
+
+
 ```
 
 + F.5 如果函数非常小，并且时间是敏感的，就将其声明为inline
@@ -347,7 +373,83 @@ constexpr 蕴含 inline。
 
 ```
 
-F.6: 如果函数必然不会抛出异常，就将其声明为 noexcept
++ F.6: 如果函数必然不会抛出异常，就将其声明为 noexcept
+
+当一个函数被声明为 noexcept 时，编译器会做出一些优化，以避免异常的处理。这些优化包括省略异常处理代码，减少栈展开操作和其他能够提高程序运行效率的操作。因此，使用 noexcept 可以帮助开发者提高程序的性能和可靠性。
+
+
+析构函数，swap 函数，移动操作，以及默认构造函数不应当抛出异常 // 存疑?
+
+笔记:谨慎使用
+
++ F.7: 对于常规用法，应当接受 T* 或 T& 参数而不是智能指针
+```c++
+智能指针的传递会转移或者共享所有权，因此应当仅在有意要实现所有权语义时才能使用。 不操作生存期的函数应当接受原始指针或引用。
+
+// 被调用方 bad
+void f(shared_ptr<widget>& w)
+{
+    // ...
+    use(*w); // w 的唯一使用点 -- 其生存期是完全未被涉及到的
+    // ...
+};
+
+// 调用方
+shared_ptr<widget> my_widget = /* ... */;
+f(my_widget);
+
+widget stack_widget;
+f(stack_widget); // 错误
+
+// 被调用方 good
+void f(widget& w)
+{
+    // ...
+    use(w);
+    // ...
+};
+
+// 调用方
+shared_ptr<widget> my_widget = /* ... */;
+f(*my_widget);
+
+widget stack_widget;
+f(stack_widget); // ok -- 这样就有效了
+
+
+实施: 若函数接受可复制的智能指针类型（即重载了 operator-> 或 operator*），但该函数仅调用了：operator*、operator-> 或 get()，则给出警告。 建议代之以 T* 或 T&。
+笔记: 引用只是别名，没有任何内存空间。智能指针也要限制，当且仅当关于生存期相关时才使用
+```
++ F.8 优先使用纯函数
+```c++
+幂等且无副作用
+```
++ F.9 未使用的形参应当没有名字
++ F.10: 若操作可被重用，则应为其命名
++ F.11 当需要仅在一处使用的简单函数对象时 使用无名lambda
+```c++
+例外: 为lambda命名有助于明晰代码,即便仅使用一次
+```
 ### 参数传递语义的规则
++ 优先使用简单的和传统的信息传递方式 重要! 
+```c++
+void f1(const string& s);  // OK: 按 const 引用传递; 总是廉价的
+void f2(string s);         // bad: 可能是昂贵的
+void f3(int x);            // OK: 无可比拟
+void f4(const int& x);     // bad: f4() 中的访问带来开销
+
+（仅）对于高级的运用，如果你确实需要为“只当作输入”的参数的按右值传递进行优化的话：
+
+如果函数需要无条件地从参数进行移动，那就按 && 来接受参数。参见 F.18。
+如果函数需要保留参数的一个副本，那就在按 const& 接受参数（对于左值）之外， 添加一个按 && 传递参数（对于右值）的重载，并在函数体中将之 std::move 到其目标之中。基本上，这个重载是“将被移动（will-move-from）”；参见 F.18。
+在特殊情况中，比如有多个“输入+复制”的参数时，考虑采用完美转发
+
+强制实施
+【简单】〔基础〕 当按值传递的参数的大小大于 2 * sizeof(void*) 时给出警告。 建议代之以 const 的引用。
+【简单】〔基础〕 当按 const 引用传递的参数的大小小于或等于 2 * sizeof(void*) 时给出警告。建议代之以按值传递。
+【简单】〔基础〕 当按 const 引用传递的参数被 move 时给出警告。
+
+```
++ F.17 对于“输入/输出（in-out）”参数，按非 const 引用进行传递
 ### 值返回语义的规则
 ### 其他函数规则

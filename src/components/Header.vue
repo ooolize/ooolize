@@ -21,7 +21,12 @@
     </div>
 
     <div class="flex justify-end items-center w-2/12">
-      <img class="mx-1" src="@/assets/svg/lang.svg" alt="light mode" />
+      <img
+        class="mx-1"
+        src="@/assets/svg/lang.svg"
+        alt="light mode"
+        @click="changeLang()"
+      />
       <img
         class="mx-1"
         src="@/assets/svg/light.svg"
@@ -35,7 +40,7 @@
 <script setup lang="ts">
 // import { ref } from "vue";
 import { changeStatus } from "@/hooks/useDark";
-
+import { changeLang } from "@/hooks/useI18n";
 const navigatorList = [
   {
     name: "blog",

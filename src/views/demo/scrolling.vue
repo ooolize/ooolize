@@ -59,11 +59,11 @@ type RefPoint = {
 
 const text = "hel~oWORLD";
 let scrollMax: number = 1000;
-let firstArrive = false;
+let firstArrive = true;
 let startHeight: Ref<number> = ref(0);
-const curHeight: Ref<number> = ref(0);
+const alreadyScrollHeightFromStart: Ref<number> = ref(0);
 const scrollHeight: Ref<number> = computed(() => {
-  return curHeight.value > scrollMax ? scrollMax : curHeight.value;
+  return alreadyScrollHeightFromStart.value > scrollMax ? scrollMax : alreadyScrollHeightFromStart.value;
 });
 const randomPoint: Record<string, RefPoint> = {}; // 随机点
 const targetPoint: Record<string, Point> = {}; // 目标点
@@ -85,7 +85,7 @@ const scrollDis: Record<string, RefDistance> = reactive(
         return (
           rate.value *
             (initDisPoint[cur] == undefined ? 0 : initDisPoint[cur].yDis) +
-          curHeight.value
+          alreadyScrollHeightFromStart.value
         );
       }),
     };
@@ -118,14 +118,13 @@ const calcInitDis = () => {
 window.addEventListener("scroll", () => {
   if (isAllRandomShow()) {
     // 第一次来
-    if (!firstArrive) {
+    if (firstArrive) {
       calcInitDis();
-      firstArrive = true;
+      firstArrive = false;
       return;
     }
     // 在约定范围内 滚动响应
-    // if (window.scrollY - startHeight < scrollMax) {
-    curHeight.value = window.scrollY - startHeight.value;
+    alreadyScrollHeightFromStart.value = window.scrollY - startHeight.value;
 
     return;
   } else {
@@ -153,7 +152,7 @@ onMounted(() => {
     // 将className为random-x的元素,给予随机的位置
     element.style.top = `${Math.random() * 70}vh`;
     element.style.left = `${Math.random() * 30}vw`;
-    console.log(element.getBoundingClientRect());
+    // console.log(element.getBoundingClientRect());
 
     let elementPos = element.getBoundingClientRect();
     let text = element.innerText;
