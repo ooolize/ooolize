@@ -265,7 +265,7 @@ private:
 笔记: RAII 
 ```
 
-## 函数
+## 第四章:函数
 ### 函数定义式规则
 + F.1: 把有意义的操作“打包”成为精心命名的函数
 ```c++
@@ -439,7 +439,7 @@ void f3(int x);            // OK: 无可比拟
 void f4(const int& x);     // bad: f4() 中的访问带来开销
 
 （仅）对于高级的运用，如果你确实需要为“只当作输入”的参数的按右值传递进行优化的话：
-
+             
 如果函数需要无条件地从参数进行移动，那就按 && 来接受参数。参见 F.18。
 如果函数需要保留参数的一个副本，那就在按 const& 接受参数（对于左值）之外， 添加一个按 && 传递参数（对于右值）的重载，并在函数体中将之 std::move 到其目标之中。基本上，这个重载是“将被移动（will-move-from）”；参见 F.18。
 在特殊情况中，比如有多个“输入+复制”的参数时，考虑采用完美转发
@@ -451,5 +451,322 @@ void f4(const int& x);     // bad: f4() 中的访问带来开销
 
 ```
 + F.17 对于“输入/输出（in-out）”参数，按非 const 引用进行传递
+```c++
+void update(Record& r);  // 假定 update 将会写入 r
+左值右值:https://zhuanlan.zhihu.com/p/107445960
+```
++ F.18 对于将被移动参数，按x&&进行传递并对参数std::move
+```c++
+X&& 绑定到右值，而要传递左值的话则要求在调用点明确进行 std::move。
+
+void sink(vector<int>&& v)  // 无论参数所拥有的是什么，sink 都获得了其所有权
+{
+    // 通常这里可能有对 v 的 const 访问
+    store_somewhere(std::move(v));
+    // 通常这里不再会使用 v 了；它已经被移走
+}
+```
++ F.19 对于转发参数 按TP&&进行传递并只对参数std::forward
+```c++
+template<class F, class... Args>
+inline auto invoke(F f, Args&&... args)
+{
+    return f(forward<Args>(args)...);
+}
+```
++ F.20 对于输出值，采用返回值优先于输出参数
+```c++
+// OK: 返回指向具有 x 值的元素的指针
+vector<const int*> find_all(const vector<int>&, int x);
+
+// 不好: 把指向具有 x 值的元素的指针放入 out
+void find_all(const vector<int>&, vector<const int*>& out, int x);
+```
+
++ F.21: 要返回多个“输出”值，优先返回结构体或元组（tuple）
+```c++
+Sometype iter;                                // 如果我们还未因为别的目的而使用
+Someothertype success;                        // 这些变量，则进行默认初始化
+
+tie(iter, success) = my_set.insert("Hello");   // 普通的返回值
+if (success) do_something_with(iter);
+
+// c++17
+if (auto [ iter, success ] = my_set.insert("Hello"); success) do_something_with(iter);
+
+
+// 不好: 在代码注释作用说明仅作输出的参数
+int f(const string& input, /*output only*/ string& output_data)
+{
+    // ...
+    output_data = something();
+    return status;
+}
+
+// 好: 自我说明的
+tuple<int, string> f(const string& input)
+{
+    // ...
+    return {status, something()};
+}
+```
+
+F.60: 当“没有参数”是有效的选项时，采用 T* 优先于 T&
++ F.22: 用 T*，owner<T*> 或者智能指针来代表一个对象
+```c++
+在传统的 C 和 C++ 代码中，普通的 T* 有各种互相没什么关联的用法，比如：
+
+标识单个对象（本函数内不会进行 delete）
+指向分配于自由存储之中的一个对象（随后将会 delete）
+持有 nullptr 值
+标识一个 C 风格字符串（以零结尾的字符数组）
+标识一个数组，其长度被分开指明
+标识数组中的一个位置
+这样就难于了解代码真正做了什么和打算做什么。 它也会使检查工作和工具支持复杂化。
+
+void use(int* p, int n, char* s, int* q)
+{
+    p[n - 1] = 666; // 不好: 不知道 p 是不是指向了 n 个元素；
+                    // 应当假定它并非如此，否则应当使用 span<int>
+    cout << s;      // 不好: 不知道 s 指向的是不是以零结尾的字符数组；
+                    // 应当假定它并非如此，否则应当使用 zstring
+    delete q;       // 不好: 不知道 *q 是不是在自由存储中分配的；
+                    // 否则应当使用 owner
+}
+
+void use2(span<int> p, zstring s, owner<int*> q)
+{
+    p[p.size() - 1] = 666; // OK, 会造成范围错误
+    cout << s; // OK
+    delete q;  // OK
+}
+```
+
++ F.23: 用 not_null<T> 来表明“空值（null）”不是有效的值
+```c++
+// 确保 p != nullptr 是调用者的任务
+int length(not_null<Record*> p);
+
+// length() 的实现者必须假定可能出现 p == nullptr
+int length(Record* p);
+```
++ F.24 用span<T>表示半开序列
+```c++
+X* find(span<X> r, const X& v);    // 在 r 中寻找 v
+
+vector<X> vec;
+// ...
+auto p = find({vec.begin(), vec.end()}, X{});  // 在 vec 中寻找 X{}
+```
+
++ F.25: 用 zstring 或者 not_null<zstring> 来代表 C 风格的字符串
+```c++
+当不需要零结尾时，请使用 'string_view'。
+```
++ F.26: 当需要指针时，用 unique_ptr<T> 来传递所有权
+```c++
+unique_ptr<Shape> get_shape(istream& is)  // 从输入流中装配一个形状
+{
+    auto kind = read_header(is); // 从输入中读取头部并识别下一个形状
+    switch (kind) {
+    case kCircle:
+        return make_unique<Circle>(is);
+    case kTriangle:
+        return make_unique<Triangle>(is);
+    // ...
+    }
+}
+```
++ F.27 用 shared_ptr<T> 来共享所有权
+```c++
+使用 std::shared_ptr 是表示共享所有权的标准方式。其含义是，最后一个拥有者负责删除对象。
+
+
+shared_ptr<const Image> im { read_image(somewhere) };
+
+std::thread t0 {shade, args0, top_left, im};
+std::thread t1 {shade, args1, top_right, im};
+std::thread t2 {shade, args2, bottom_left, im};
+std::thread t3 {shade, args3, bottom_right, im};
+
+// 脱离各线程
+// 最后执行完的线程会删除这个图像
+```
+
 ### 值返回语义的规则
++ F.42: 返回 T* 来（仅仅）给出一个位置
+```c++
+Node* find(Node* t, const string& s)  // 在 Node 组成的二叉树中寻找 s
+{
+    if (!t || t->name == s) return t;
+    if ((auto p = find(t->left, s))) return p;
+    if ((auto p = find(t->right, s))) return p;
+    return nullptr;
+}
+find 所返回的指针如果不是 nullptr 的话，就指定了一个含有 s 的 Node。 重要的是，这里面并没有暗含着把所指向的对象的所有权传递给调用者。
+不要返回指向某个不在调用方的作用域中的东西的指针
+
+疑问：为什么不用unique_ptr?
+```
++ F.43: 不要（直接或间接）返回指向局部对象的指针或引用
+```c++
+幸运的是，大多数（全部？）的当代编译器都可以识别这种简单的情况并给出警告。
+```
++ F.44: 当不想进行复制，而“没有对象被返回”不是有效的选项时，返回 T&
+```c++
+它要求返回对已销毁的临时对象的引用。
+
+对除了 std::move 和 std::forward 之外的任何把 && 作为返回类型的情况都进行标记。
+
+```
++ F.46: int 是 main() 的返回类型
++ F.47: 赋值运算符返回 T&
+```c++
+class MyClass {
+    MyClass& operator+(const MyClass& rhs);
+}
+```
++ F.48: 不要用 return std::move(local)
++ F.49: 不要返回 const T
+```c++
+const vector<int> fct();    // 不好: 这个 "const" 带来的麻烦超过其价值
+
+void g(vector<int>& vx)
+{
+    // ...
+    fct() = vx;   // 被 "const" 所禁止
+    // ...
+    vx = fct(); // 昂贵的复制："const" 抑制掉了移动语义
+    // ...
+}
+```
+
 ### 其他函数规则
++ F.50 当函数不适用时（不能俘获局部变量，或者不能编写局部函数），就使用 Lambda
++ F.51: 如果需要作出选择，采用默认实参应当优先于进行重载
++ F.52: 对于局部使用的（也包括传递给算法的）lambda，优先采用按引用俘获
+```c++
+void send_packets(buffers& bufs)
+{
+    stage encryptor([](buffer& b) { encrypt(b); });
+    stage compressor([&](buffer& b) { compress(b); encryptor.process(b); });
+    stage decorator([&](buffer& b) { decorate(b); compressor.process(b); });
+    for (auto& b : bufs) { decorator.process(b); }
+}  // 自动阻塞以等待管线完成
+```
++ F.53: 对于非局部使用的（包括被返回的，在堆上存储的，或者传递给别的线程的）lambda，避免采用按引用俘获
+```c++
+如果必须捕获非局部指针，则应考虑使用 unique_ptr；它会处理生存期和同步问题。
+
+如果必须捕获 this 指针，则应考虑使用 [*this] 捕获，它会创建整个对象的一个副本。
+```
+
+F.54: 当俘获了 this 时，显式俘获所有的变量（不使用默认俘获）
+```c++
+class My_class {
+    int x = 0;
+    // ...
+
+    void f()
+    {
+        int i = 0;
+        // ...
+
+        auto lambda = [=] { use(i, x); };   // 不好: “貌似”按复制/按值俘获
+        // [&] 在当前的语言规则下的语义是一样的，也会复制 this 指针
+        // [=,this] 和 [&,this] 也没好多少，并且也会导致混淆
+
+        x = 42;
+        lambda(); // 调用 use(0, 42);
+        x = 43;
+        lambda(); // 调用 use(0, 43);
+
+        // ...
+
+        auto lambda2 = [i, this] { use(i, x); }; // ok, 最明确并且最不混淆
+
+        // ...
+    }
+};
+```
++ F.55: 不要使用 va_arg 参数
+```c++
+int sum(...)
+{
+    // ...
+    while (/*...*/)
+        result += va_arg(list, int); // 不好，假定所传递的是 int
+    // ...
+}
+
+sum(3, 2); // ok
+sum(3.14159, 2.71828); // 不好，未定义的行为
+
+template<class ...Args>
+auto sum(Args... args) // 好，而且更灵活
+{
+    return (... + args); // 注意：C++17 的“折叠表达式”
+}
+
+sum(3, 2); // ok: 5
+sum(3.14159, 2.71828); // ok: ~5.85987
+折叠表达式: https://zhuanlan.zhihu.com/p/670871464 
+
+
+template<typename First, typename... Rest>
+First sum2(First&& first, Rest&&... rest)
+{
+    return (first + ... + rest);  // 二元左折叠
+}
+
+template<typename... Ts>
+void printAll(Ts&&... mXs)
+{
+    (cout << ... << mXs) << endl; // 二元左折叠
+}
+printAll(3, 4.0, "5")
+= (cout << ... << pack(3, 4.0, "5")) << endl
+= ((cout << 3) << 4.0) << "5" << endl
+= 打印345并换行
+
+```
++ F.56: 避免不必要的条件嵌套
+```c++
+错误直接返回
+```
+
+## 第五章 类和类层次
+C.1: 把相关的数据组织到结构中（struct 或 class）
+C.2: 当类具有不变式时使用 class；当数据成员可以独立进行变动时使用 struct
+C.3: 用类来表示接口和实现之间的区别
+C.4: 仅当函数直接访问类的内部表示时才让函数作为其成员
+C.5: 把辅助函数放在其所支持的类相同的命名空间之中
+```c++
+辅助函数是（由类的作者提供的）并不需要直接访问类的内部表示的函数，它们也被当作是类的可用接口的一部分。
+namespace Chrono { // 我们在这里放置与时间有关的服务
+
+    class Time { /* ... */ };
+    class Date { /* ... */ };
+
+    // 辅助函数:
+    bool operator==(Date, Date);
+    Date next_weekday(Date);
+    // ...
+}
+```
+C.7: 不要在同一个语句中同时定义类或枚举并声明该类型的变量
+```c++
+struct Data { /*...*/ } data{ /*...*/ };
+struct Data { /*...*/ };
+Data data{ /*...*/ };
+```
+C.8: 当有任何非公开成员时使用 class 而不是 struct
+C.9: 让成员的暴露最小化
+```c++
+封装。 信息隐藏。 使发生意外访问的机会最小化。 这会简化维护工作。
+```
+
+C.10:优先使用具体类型而不是类继承层次
+```c++
+对于运行时多态接口来说，使用间接是一项基本要求。 而分配/回收操作的开销则不是（它们只是最常见的情况而已）。 我们可以使用基类来作为有作用域的派生类对象的接口。 当禁止使用动态分配时（比如硬实时）就可以这样做，为某些种类的插件提供一种稳定的接口。 没懂?
+```

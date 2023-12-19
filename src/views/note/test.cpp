@@ -1,31 +1,22 @@
-/*
- * @Description:
- * @Author: lize
- * @Date: 2023-12-11
- * @LastEditors: lize
- */
 #include <iostream>
-
-template <typename T>
-void f(T) {}
-
-template <typename T, size_t N>
-void f2(T (&arr)[N])
-{ // T被推导为const char，N为4，arr引用了局部的数组
+using namespace std;
+int *f()
+{
+    int fx = 9;
+    return &fx; // 不好
 }
 
-int main()
+void g(int *p) // 貌似确实是无辜的
 {
-    int i1(3.14);
-    int i2 = 3.14;
+    int gx;
+    cout << "*p == " << *p << '\n';
+    *p = 999;
+    cout << "gx == " << gx << '\n';
 }
-int main()
-{
-    f(1);    // int
-    f(1.2);  // double
-    f(1.f);  // float
-    f("乐"); // const char* 并非数组类型，有隐式转换，因为数组没办法拷贝
 
-    // 解决办法，使用数组引用
-    f2("乐");
+void h()
+{
+    int *p = f();
+    int z = *p; // 从已经丢弃的栈帧中读取（不好）
+    g(p);       // 把指向已丢弃栈帧的指针传递给函数（不好）
 }
