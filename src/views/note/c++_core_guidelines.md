@@ -1272,5 +1272,428 @@ virtual 刚好仅仅表明“这是一个新的虚函数”。
 override 刚好仅仅表明“这是一个非最终覆盖函数”。
 final 刚好仅仅表明“这是一个最终覆盖函数”
 ```
-C.129: 当设计类层次时，应区分实现继承和接口继承
+C.129: 当设计类层次时，应区分实现继承和接口继承 
+```c++
+重要
+
+接口继承，是使用继承来把用户和实现进行分离， 特别是允许添加和修改派生类而不影响基类的用户。
+实现继承，是使用继承来简化新设施的实现， 通过将有用的操作提供给相关的新操作的实现者（有时候称作“差异式编程”）。
+
+为什么要这么做?
+
+接口继承保证接口函数的简单稳定。用户只应该只依赖接口的声明，不关心实现。
+
+怎么做?
+如何才能同时获得接口类层次的稳定类层次的好处和实现继承的实现重用的好处呢？ 一种流行的技巧是双类层次。
+有许多实现双类层次的方式；这里，我们使用一种多重继承形式。
+
+Smiley     ->         Circle     ->  Shape
+  ^                     ^               ^
+  |                     |               |
+Impl::Smiley -> Impl::Circle -> Impl::Shape
+
+
+分离接口和实现的另一个（相关的）技巧是 Pimpl。
+
+合理性?存疑
+```
+
+C.130: 多态类的深拷贝；优先采用虚函数 clone 来替代公开复制构造/赋值
+```c++
+class B {
+public:
+    B() = default;
+    virtual ~B() = default;
+    virtual gsl::owner<B*> clone() const = 0;
+protected:
+     B(const B&) = default;
+     B& operator=(const B&) = default;
+     B(B&&) noexcept = default;
+     B& operator=(B&&) noexcept = default;
+    // ...
+};
+
+class D : public B {
+public:
+    gsl::owner<D*> clone() override
+    {
+        return new D{*this};
+    }
+};
+```
+C.131: 避免无价值的取值和设值函数
+```c++
+无价值的取值和设值函数没有提供语义价值；让数据项自己 public 是一样的。
+```
+C.132: 请勿无理由地使函数 virtual
+C.133: 避免 protected 数据
+C.134: 确保所有非 const 数据成员有相同的访问级别
+```c++
+理由:防止出现会导致错误的逻辑混乱。 当非 const 数据成员的访问级别不同时，这个类型就会在它应当做什么上出现混乱。 这个类型是用来维持某个不变式的类型，还是仅仅集合了一组值而已？
+有必要吗?
+```
+C.135: 用多继承来表达多个不同的接口
+```c++
+class iostream : public istream, public ostream {   // 充分简化
+    // ...
+};
+```
+C.136: 用多继承来表达一些实现特性的合并
+```c++
+enable_shared_from_this
+A* pa = new A()
+auto spa1 = share_ptr<A>(pa)
+auto spa2 = share_ptr<A>(pa)
+...
+// A 会析构两次!
+```
+
+C.137: 用 virtual 基类以避免过于通用的基类
+
+接口与实现分离
+```c++
+struct Interface {
+    virtual void f();
+    virtual int g();
+    // ... 没有数据 ...
+};
+
+class Utility {  // 带有数据
+    void utility1();
+    virtual void utility2();    // 定制点
+public:
+    int x;
+    int y;
+};
+
+class Derive1 : public Interface, virtual protected Utility {
+    // 覆盖了 Iterface 的函数
+    // 可能覆盖 Utility 的虚函数
+    // ...
+};
+
+class Derive2 : public Interface, virtual protected Utility {
+    // 覆盖了 Iterface 的函数
+    // 可能覆盖 Utility 的虚函数
+    // ...
+};
+```
+C.138: 用 using 来为派生类和其基类建立重载集合
+
+没有 using 声明的话，派生类的成员函数将会隐藏全部其所继承的重载集合。
+```c++
+#include <iostream>
+class B {
+public:
+    virtual int f(int i) { std::cout << "f(int): "; return i; }
+    virtual double f(double d) { std::cout << "f(double): "; return d; }
+    virtual ~B() = default;
+};
+class D: public B {
+public:
+    int f(int i) override { std::cout << "f(int): "; return i + 1; }
+};
+int main()
+{
+    D d;
+    std::cout << d.f(2) << '\n';   // 打印 "f(int): 3"
+    std::cout << d.f(2.3) << '\n'; // 打印 "f(int): 3"
+}
+
+// 好
+class D: public B {
+public:
+    int f(int i) override { std::cout << "f(int): "; return i + 1; }
+    using B::f; // 展露了 f(double)
+}; 
+```
+
+C.139: 对类运用 final 应当保守
+C.140: 不要在虚函数和其覆盖函数上提供不同的默认参数
 #### 对类层次中的对象进行访问的规则概览：
+
+C.145: 通过指针和引用来访问多态对象
+
+C.146: 当无法避免在类层次上进行导航时应使用 dynamic_cast
+```c++
+dynamic_cast用于类继承层次间的指针或引用转换。主要还是用于执行“安全的向下转型（safe downcasting）”，
+```
+C.147: 当查找所需类的失败被当做一种错误时，应当对引用类型使用 dynamic_cast
+```c++
+对引用进行的强制转换，所表达的意图是最终会获得一个有效对象，因此这种强制转换必须成功。如果无法成功的话，dynamic_cast 将会抛出异常。
+```
+C.148: 当查找所需类的失败被当做一种有效的可能情况时，应当对指针类型使用 dynamic_cast
+```c++
+dynamic_cast 转换允许测试指针是否指向某个其类层次中包含给定类的多态对象。由于其找不到类时仅会返回空值，因而可以在运行时予以测试。这允许编写的代码可以基于其结果而选择不同的代码路径。
+https://www.cnblogs.com/xiangtingshen/p/10851851.html
+```
+C.149: 用 unique_ptr 或 shared_ptr 来避免忘记对以 new 所创建的对象进行 delete 的情况
+C.150: 用 make_unique() 来构建由 unique_ptr 所拥有的对象
+C.151: 用 make_shared() 来构建由 shared_ptr 所拥有的对象
+C.152: 禁止把指向派生类对象的数组的指针赋值给指向基类的指针
+C.153: 优先采用虚函数而不是强制转换
+#### 重载和运算符重载
+C.160: 定义运算符应当主要用于模仿传统用法
+C.161: 对于对称的运算符应当采用非成员函数
+```c++
+如果使用的是成员函数的话，就需要两个才行。 如果为（比如）== 采用的不是非成员函数的话，a == b 和 b == a 就会存在微妙的差别。
+不懂,问题在哪里?
+```
+C.162: 重载的操作之间应当大体上是等价的
+```c++
+// bad
+void print_int(int a);
+void print_based(int a, int base);
+void print_string(const string&);
+// good
+void print(int a);
+void print(int a, int base);
+void print(const string&);
+```
+C.163: 应当仅对大体上等价的操作进行重载
+```c++
+// bad
+void open(Gate& g);   // 把车库出口通道的障碍移除
+void open(const char* name, const char* mode ="r");   // 打开文件
+// good
+void open_gate(Gate& g);   // 把车库出口通道的障碍移除
+void fopen(const char* name, const char* mode);   // 打开文件
+```
+C.164: 避免隐式转换运算符
+C.165: 为定制点采用 using
+```c++
+以便找到在一个独立的命名空间中所定义的函数对象或函数，它们对一个一般性函数进行了“定制”。
+没懂
+```
+C.166: 一元 & 的重载只能作为某个智能指针或引用系统的一部分而提供
+C.167: 应当为带有传统含义的操作提供运算符
+```c++
+void cout_my_class(const My_class& c) // 含糊，并非传统约定，非泛型
+{
+    std::cout << /* 此处为类成员 */;
+}
+
+std::ostream& operator<<(std::ostream& os, const my_class& c) // OK
+{
+    return os << /* 此处为类成员 */;
+}
+```
+C.168: 应当在操作数所在的命名空间中定义重载运算符
+C.170: 当想要重载 lambda 时，应当使用泛型 lambda
+```c++
+void f(int);
+void f(double);
+auto f = [](char);   // 错误: 无法重载变量和函数
+
+auto g = [](int) { /* ... */ };
+auto g = [](double) { /* ... */ };   // 错误: 无法重载变量
+
+auto h = [](auto) { /* ... */ };   // OK
+```
+#### 联合体
+union 是一种 struct，其所有成员都开始于相同的地址，因而它同时只能持有一个成员。 union 并不会跟踪其所存储的是哪个成员，因此必须由程序员来保证其正确； 这本质上就是易错的，但有一些弥补的办法。
+
+由一个 union 加上一个用于指出其当前持有哪个成员的指示符构成的类型被称为带标记联合体（tagged union），区分性联合体（discriminated union），或者变异体（variant）。
+
+C.180: 采用 union 用以节省内存
+C.181: 避免“裸” union
+C.182: 利用匿名 union 实现带标记联合体
+```c++
+class Value { // 以一个联合体来表现两个候选表示
+private:
+    enum class Tag { number, text };
+    Tag type; // 区分
+
+    union { // 表示（注意这是匿名联合体）
+        int i;
+        string s; // string 带有默认构造函数，复制操作，和析构函数
+    };
+public:
+    struct Bad_entry { }; // 用作异常
+
+    ~Value();
+    Value& operator=(const Value&);   // 因为 string 变体的缘故而需要这个
+    Value(const Value&);
+    // ...
+    int number() const;
+    string text() const;
+
+    void set_number(int n);
+    void set_text(const string&);
+    // ...
+};
+```
+C.183: 不要将 union 用于类型双关
+```c++
+// bad 
+union Pun {
+    int x;
+    unsigned char c[sizeof(int)];
+};
+```
+## 第六章 枚举
+枚举用于定义整数值的集合，并用于为这种值集定义类型。有两种类型的枚举， “普通”的 enum 和 class enum。
+
+
+
+Enum.1: 优先采用枚举而不是宏
+```c++
+宏不遵守作用域和类型规则。
+// bad
+// webcolors.h (第三方头文件)
+#define RED   0xFF0000
+#define GREEN 0x00FF00
+#define BLUE  0x0000FF
+
+// productinfo.h
+// 以下则基于颜色定义了产品的子类型
+#define RED    0
+#define PURPLE 1
+#define BLUE   2
+
+int webby = BLUE;   // webby == 2; 可能不是我们所想要的
+
+// good
+enum class Web_color { red = 0xFF0000, green = 0x00FF00, blue = 0x0000FF };
+enum class Product_info { red = 0, purple = 1, blue = 2 };
+
+int webby = blue;   // 错误: 应当明确
+Web_color webby = Web_color::blue;
+可以考虑使用 constexpr 和 const inline 变量。
+```
+Enum.2: 采用枚举来表示相关的具名常量的集合
+```c++
+enum class Product_info { red = 0, purple = 1, blue = 2 };
+
+void print(Product_info inf)
+{
+    switch (inf) {
+    case Product_info::red: cout << "red"; break;
+    case Product_info::purple: cout << "purple"; break;
+    }
+}
+```
+Enum.3: 优先采用 enum class 而不是“普通”enum
+```c++
+void Print_color(int color);
+
+enum class Web_color { red = 0xFF0000, green = 0x00FF00, blue = 0x0000FF };
+enum class Product_info { red = 0, purple = 1, blue = 2 };
+
+Web_color webby = Web_color::blue;
+Print_color(webby);  // 错误: 无法转换 Web_color 为 int。
+Print_color(Product_info::red);  // 错误: 无法转换 Product_info 为 int。
+```
+Enum.4: 针对安全和简单的用法来为枚举定义操作
+```c++
+enum Day { mon, tue, wed, thu, fri, sat, sun };
+
+Day& operator++(Day& d)
+{
+    return d = (d == Day::sun) ? Day::mon : static_cast<Day>(static_cast<int>(d)+1);
+}
+
+Day today = Day::sat;
+Day tomorrow = ++today;
+```
+Enum.5: 请勿为枚举符采用 ALL_CAPS 命名方式
+Enum.6: 避免使用无名枚举
+Enum.7: 仅在必要时才为枚举指定其底层类型
+缺省情况的读写都是最简单的。
+```c++
+
+enum class Web_color : int32_t { red   = 0xFF0000,
+                                 green = 0x00FF00,
+                                 blue  = 0x0000FF };  // 底层类型是多余的
+```
+Enum.8: 仅在必要时才指定枚举符的值
+
+
+
+
+
+## 第七章 资源管理
+### 资源管理规则
+R.1: 利用资源句柄和 RAII（资源获取即初始化）来自动管理资源
+```c++
+应当将资源封装到保证这种配对调用的对象之中——在构造函数中获取资源，并在其析构函数中释放它。
+避免资源泄漏和人工资源管理的复杂性.
+```
+R.2: 接口中的原生指针（仅）代表个体对象
+```c++
+最好用某个容器类型（比如 vector，拥有数据），或者用 span（不拥有数据）来表示数组。
+```
+R.3: 原生指针（T*）没有所有权
+```c++
+template<typename T>
+class X2 {
+public:
+    owner<T*> p;  // OK: p 具有所有权
+    T* q;         // OK: q 没有所有权
+    // ...
+};
+
+返回（原生）指针的做法向调用方暴露了在生存期管理上的不确定性；就是说，谁应该删除其所指向的对象呢？
+```
+R.4: 原生引用（T&）没有所有权
+```c++
+// bad
+void f()
+{
+    int& r = *new int{7};  // 不好: 原生的具有所有权的引用
+    // ...
+    delete &r;             // 不好: 违反了有关删除原生指针的规则
+}
+```
+R.5: 优先采用有作用域的对象，避免不必要的堆分配
+R.6: 避免非 const 的全局变量
+### 分配和回收规则
+
+R.10: 避免 malloc() 和 free()
+R.11: 避免显式调用 new 和 delete
+R.12: 显式资源分配的结果应当立即交给一个管理对象
+```c++
+// bad
+void func(const string& name)
+{
+    FILE* f = fopen(name, "r");            // 打开文件
+    vector<char> buf(1024);
+    auto _ = finally([f] { fclose(f); });  // 记得要关闭文件
+    // ...
+}
+
+// good
+void func(const string& name)
+{
+    ifstream f{name};   // 打开文件
+    vector<char> buf(1024);
+    // ...
+}
+```
+R.13: 单个表达式语句中至多进行一次显式资源分配
+```c++
+如果在一条语句中进行两次显式资源分配的话就可能发生资源泄漏，这是因为许多的子表达式（包括函数参数）的求值顺序都是未指明的。
+// 不好：可能会泄漏
+fun(shared_ptr<Widget>(new Widget(a, b)), shared_ptr<Widget>(new Widget(c, d)));
+
+最佳的方案是使用返回所有者对象的工厂函数，而完全避免显式的分配：
+fun(make_shared<Widget>(a, b), make_shared<Widget>(c, d)); // 最佳
+```
+R.14: 避免使用 [] 形参，优先使用 span
+R.15: 总是同时重载相匹配的分配、回收函数对
+
+### 智能指针规则
+R.20: 用 unique_ptr 或 shared_ptr 表示所有权
+R.21: 优先采用 unique_ptr 而不是 shared_ptr，除非需要共享所有权
+R.22: 使用 make_shared() 创建 shared_ptr
+R.23: 使用 make_unique() 创建 unique_ptr
+R.24: 使用 std::weak_ptr 来打断 shared_ptr 的循环引用
+R.30: 以智能指针为参数，仅用于明确表达生存期语义
+R.31: 非 std 的智能指针，应当遵循 std 的行为模式
+R.32: unique_ptr<widget> 参数用以表达函数假定获得 widget 的所有权
+R.33: unique_ptr<widget>& 参数用以表达函数对该 widget 重新置位
+R.34: shared_ptr<widget> 参数用以表达函数是所有者的一份子
+R.35: shared_ptr<widget>& 参数用以表达函数可能会对共享的指针重新置位
+R.36: const shared_ptr<widget>& 参数用以表达它可能将保留一个对对象的引用 ???
+R.37: 不要把来自某个智能指针别名的指针或引用传递出去
+### 
