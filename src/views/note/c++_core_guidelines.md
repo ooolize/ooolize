@@ -1686,14 +1686,228 @@ R.15: 总是同时重载相匹配的分配、回收函数对
 R.20: 用 unique_ptr 或 shared_ptr 表示所有权
 R.21: 优先采用 unique_ptr 而不是 shared_ptr，除非需要共享所有权
 R.22: 使用 make_shared() 创建 shared_ptr
+```c++
+ 使用 make_shared() 创建 shared_ptr
+ shared_ptr<X> p1 {new X(2)} // bad
+ auto p  = make_shared<X>(2) // good
+```
 R.23: 使用 make_unique() 创建 unique_ptr
 R.24: 使用 std::weak_ptr 来打断 shared_ptr 的循环引用
+```c++
+循环引用: A指向B，B指向A，在表示双向关系时
+int main()
+{
+    auto son = make_shared<Son>();
+    auto father = make_shared<Father>();
+    son->father_ = father;
+    father->son_ = son;
+    cout << "son: " << son.use_count() << endl;
+    cout << "father: " << father.use_count() << endl;
+    return 0;
+}
+解决: 将father->son_改为 weak_ptr<Son> 。它只能访问资源而不能改变资源所有权
+```
 R.30: 以智能指针为参数，仅用于明确表达生存期语义
+```c++
+重要:智能指针的传递会转移或者共享所有权，因此应当仅在有意要实现所有权语义时才能使用。 F.7
+```
 R.31: 非 std 的智能指针，应当遵循 std 的行为模式
 R.32: unique_ptr<widget> 参数用以表达函数假定获得 widget 的所有权
+```c++
+void sink(unique_ptr<widget>); // 获得这个 widget 的所有权
+
+void uses(widget*);            // 仅仅使用了这个 widget
+```
 R.33: unique_ptr<widget>& 参数用以表达函数对该 widget 重新置位
+```c++
+以这种方式使用 unique_ptr 同时说明并强制施加了函数调用时的重新置位语义。
+void reseat(unique_ptr<widget>&); // “将要”或“可能”重新置位指针
+void thinko(const unique_ptr<widget>&); // 通常不是你想要的
+```
 R.34: shared_ptr<widget> 参数用以表达函数是所有者的一份子
 R.35: shared_ptr<widget>& 参数用以表达函数可能会对共享的指针重新置位
 R.36: const shared_ptr<widget>& 参数用以表达它可能将保留一个对对象的引用 ???
+```c++
+void share(shared_ptr<widget>);            // 共享——“将会”保持一个引用计数
+
+void reseat(shared_ptr<widget>&);          // “可能”重新置位指针
+
+void may_share(const shared_ptr<widget>&); // “可能”保持一个引用计数
+```
 R.37: 不要把来自某个智能指针别名的指针或引用传递出去
-### 
+```c++
+// 全局（静态或堆）对象，或者有别名的局部对象 ...
+shared_ptr<widget> g_p = ...;
+
+void f(widget& w)
+{
+    g();
+    use(w);  // A
+}
+
+void g()
+{
+    g_p = ...; // 噢，如果这就是这个 widget 的最后一个 shared_ptr 的话，这会销毁这个 widget
+}
+
+void my_code()
+{
+    // 很廉价: 一次增量就搞定了整个函数以及下面的所有调用树
+    auto pin = g_p;
+
+    // 好: 传递的是从局部的无别名智能指针中获得的指针或引用
+    f(*pin);
+
+    // 好: 原因相同
+    pin->func();
+}
+```
+## 第八章 表达式和语句
+### 一般规则
+### 声明的规则
+### 表达式规则
+### 语句的规则
+### 算术规则
+
+## 第九章  性能
+Per.1: 请勿进行无理由的优化
+Per.2: 请勿进行不成熟的优化
+Per.3: 请勿对非性能关键的代码进行优化
+Per.4: 不能假定复杂代码一定比简单代码更快
+```c++
+// 清晰表达意图，快速执行
+
+vector<uint8_t> v(100000);
+
+for (auto& c : v)
+    c = ~c;
+
+// 试图更快，但通常会更慢
+
+vector<uint8_t> v(100000);
+
+for (size_t i = 0; i < v.size(); i += sizeof(uint64_t)) {
+    uint64_t& quad_word = *reinterpret_cast<uint64_t*>(&v[i]);
+    quad_word = ~quad_word;
+}
+```
+Per.5: 不能假定低级代码一定比高级代码更快
+Per.6: 请勿不进行测量就作出性能评断
+Per.7: 设计应当允许优化
+```c++
+void qsort (void* base, size_t num, size_t size, int (*compar)(const void*, const void*));
+
+double data[100];
+qsort(data, 100, sizeof(double), compare_doubles);
+
+对 qsort 的调用抛弃了许多有用的信息（比如元素的类型），强制用户对其已知的信息 进行重复（比如元素的大小），并强制用户编写额外的代码（比如用于比较 double 的函数）。 这蕴含了程序员工作量的增加，易错，并剥夺了编译器为优化所需的信息。
+
+从接口设计的观点来看，qsort 抛弃了有用的信息。
+
+// c++98
+template<typename Iter>
+    void sort(Iter b, Iter e);  // sort [b:e)
+
+sort(data, data + 100);
+
+// c++20 sortable 指定了 c 必须是一个
+// 可以用 < 进行比较的元素的随机访问序列
+void sort(sortable auto& c);
+sort(c);
+
+// 用 r 比较 c 的元素
+template<random_access_range R, class C> requires sortable<R, C>
+void sort(R&& r, C c);
+
+// eg2
+template<class ForwardIterator, class T>
+bool binary_search(ForwardIterator first, ForwardIterator last, const T& val);
+
+template<class ForwardIterator, class T>
+ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T& val);
+
+template<class ForwardIterator, class T>
+pair<ForwardIterator, ForwardIterator>
+equal_range(ForwardIterator first, ForwardIterator last, const T& val);
+
+
+显然，这三个接口都是以相同的基本代码实现的。 它们不过是将基本的二叉搜索算法表现给用户的三种方式， 包含从最简单（“让简单的事情简单！”） 到返回完整但不总是必要的信息（“不要隐藏有用的信息”
+
+
+事物都是有成本的。 不要对成本过于偏执（当代计算机真的非常快）， 但需要对你所使用的东西的成本的数量级有大致的概念。 例如，应当对 **一次内存访问， 一次函数调用， 一次字符串比较， 一次系统调用， 一次磁盘访问， 以及一个通过网络的消息的成本**有大致的概念。
+```
+
+Per.10: 依赖静态类型系统
+Per.11: 把计算从运行时转移到编译期
+```c++
+double square(double d) { return d*d; }
+static double s2 = square(2);    // 旧式代码：动态初始化
+
+constexpr double ntimes(double d, int n)   // 假定 0 <= n
+{
+        double m = 1;
+        while (n--) m *= d;
+        return m;
+}
+constexpr double s3 {ntimes(2, 3)};  // 现代代码：编译期初始化
+
+我们得忍受运行时的一次函数调用的开销
+s2 在初始化开始前可能就被某个别的线程访问了。
+```
+Per.12: 消除多余的别名
+Per.13: 消除多余的间接
+Per.14: 最小化分配和回收的次数
+Per.15: 请勿在关键逻辑分支中进行分配
+Per.16: 使用紧凑的数据结构
+Per.17: 在时间关键的结构中应当先声明最常用的成员
+Per.18: 空间即时间
+Per.19: 进行可预测的内存访问
+Per.30: 避免在关键路径中进行上下文切换
+
+## 第十章 CP: 并发与并行
+CP.1: 假定你的代码将作为多线程程序的一部分而运行
+
+CP.2: 避免数据竞争
+```c++
+还有其他方式可以缓解发生数据竞争的机会：
+
+避免全局数据
+避免 static 变量
+更多地使用栈上的具体类型（且不要过多地把指针到处传递）
+更多地使用不可变数据（字面量，constexpr，以及 const）
+```
+CP.3: 最小化可写数据的明确共享
+CP.4: 以任务而不是线程的角度思考
+CP.8: 不要为同步而使用 volatile
+CP.9: 只要可行，就使用工具对并发代码进行验证
+### 并发
+CP.20: 使用 RAII，绝不使用普通的 lock()/unlock()
+CP.21: 用 std::lock() 或 std::scoped_lock 来获得多个 mutex
+CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）
+CP.23: 把联结的 thread 看作是有作用域的容器
+CP.24: 把 thread 看作是全局的容器
+CP.25: 优先采用 gsl::joining_thread 而不是 std::thread
+CP.26: 不要 detach() 线程
+CP.31: 少量数据在线程之间按值传递，而不是通过引用或指针传递
+CP.32: 用 shared_ptr 在无关的 thread 之间共享所有权
+CP.40: 最小化上下文切换
+CP.41: 最小化线程的创建和销毁
+CP.42: 不要无条件地 wait
+CP.43: 最小化临界区的时间耗费
+CP.44: 记得为 lock_guard 和 unique_lock 命名
+CP.50: mutex 要和其所护卫的数据一起定义。一旦可能就使用 synchronized_value
+
+### 协程
+CP.51: 不要使用作为协程的有俘获 lambda 表达式
+CP.52: 不要在持有锁或其它同步原语时跨越挂起点
+CP.53: 协程的形参不能按引用传递
+### 并行
+适当的时候，优先采用标准库的并行算法
+使用为并行设计的算法，而不是不必要地依赖于线性求值的算法
+### 消息传递
+CP.60: 使用 future 从并发任务返回值
+CP.61: 使用 async() 来产生并发任务
+```c++
+std:async
+std:future
+```
