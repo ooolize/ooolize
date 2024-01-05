@@ -22,6 +22,13 @@ export const noteBp: bpItem[] = [
     lang: "cn",
   },
   {
+    name: "Effective_c++",
+    link: "/note/effective_c++.md",
+    date: "2021-08-20",
+    tags: ["读书笔记"],
+    lang: "cn",
+  },
+  {
     name: "c++_core_guidelines",
     link: "/note/c++_core_guidelines.md",
     date: "2021-08-20",
