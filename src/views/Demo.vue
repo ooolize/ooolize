@@ -5,7 +5,7 @@
  * @LastEditors: lize
 -->
 <template>
-  <div class="flex justify-center items-center flex-col">
+  <div class=" flex justify-center items-center flex-col">
     <!-- <div>11</div> -->
     <div class="my-4" v-for="bpItem in demoBp">
       <NoteCard :itemMsg="bpItem"></NoteCard>

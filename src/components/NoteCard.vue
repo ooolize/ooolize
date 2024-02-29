@@ -4,7 +4,6 @@
 
 <script setup lang="ts">
 import type { bpItem } from "@/types";
-import { stringify } from "querystring";
 import router from "@/router";
 
 const props = defineProps<{

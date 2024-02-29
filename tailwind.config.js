@@ -24,7 +24,18 @@ export default {
       backgroundColor: {
         generics: "var(--generics-backgroundColor)",
       },
-    },
+      keyframes: {
+        distinct: {
+          '0%': { filter: 'blur(10px)', opacity: 0 },
+          '100%': { filter: 'blur(0px)', opacity: 1 },
+        },
+        enter: {
+          '0%': { transform: 'translateY(10px)', opacity: 0 },
+          '100%': { transform: 'translateY(0)', opacity: 1 },
+        },
+      }
+    }
+
   },
   plugins: [],
 };

@@ -10,6 +10,7 @@ import Header from "@/components/Header.vue";
 
 <template>
   <Header />
+  <div class="h-20 w-full"></div>
   <router-view></router-view>
 </template>
 

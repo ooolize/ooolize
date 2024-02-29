@@ -15,4 +15,13 @@ export interface bpItem {
 }
 export interface projectItem extends bpItem {
   icon: string;
+  picture: string;
 }
+
+// export interface projectCardType {
+//   title: string;
+//   description: string;
+//   picture: string;
+//   link: string;
+//   tags: string[];
+// }

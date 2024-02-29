@@ -18,5 +18,7 @@ const en = {
     note: "Note",
     project: "Project",
   },
+  projects: "the projects",
+  practice: "the practice demos",
 };
 export default en;
