@@ -29,7 +29,7 @@ const props = defineProps<{
     description: string;
 }>();
 
-console.log(props);
+// console.log(props);
 </script>
     
 <style></style>
